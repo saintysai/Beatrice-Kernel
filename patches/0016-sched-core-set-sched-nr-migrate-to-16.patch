@@ -1,0 +1,13 @@
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 651fa46ac..5ffb1c6b4 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -158,7 +158,7 @@ __read_mostly int sysctl_resched_latency_warn_once = 1;
+  * Number of tasks to iterate in a single balance run.
+  * Limited because this is done with IRQs disabled.
+  */
+-const_debug unsigned int sysctl_sched_nr_migrate = SCHED_NR_MIGRATE_BREAK;
++const_debug unsigned int sysctl_sched_nr_migrate = 16;
+ 
+ __read_mostly int scheduler_running;
+ 
