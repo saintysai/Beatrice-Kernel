@@ -3,7 +3,7 @@
 
 ### AnyKernel setup
 properties() { '
-kernel.string=Beatrice-Kernel v20261121 (6.1.162 | Cool & Stable | Full LTO | 500Hz | Multi-Manager | SuSFS v2.4.0)
+kernel.string=Beatrice-Kernel v20261122 (6.1.162 | Cool & Stable | Full LTO | 500Hz | TEO | SuSFS v2.4.0)
 do.devicecheck=0
 do.modules=0
 do.systemless=1
@@ -29,9 +29,9 @@ NO_BLOCK_DISPLAY=1;
 . tools/ak3-core.sh;
 
 ui_print "================================================";
-ui_print "  Beatrice-Kernel 6.1.162 (v20261121)";
+ui_print "  Beatrice-Kernel 6.1.162 (v20261122)";
 ui_print "  Universal GKI android14-6.1 | Cool & Stable";
-ui_print "  Full LTO | 500Hz | BBRv3 | SuSFS v2.4.0";
+ui_print "  Full LTO | 500Hz | TEO | BBRv3 | SuSFS v2.4.0";
 ui_print "================================================";
 
 split_boot;
