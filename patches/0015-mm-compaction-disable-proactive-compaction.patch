@@ -1,0 +1,13 @@
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 1ff0bafa4..e6b060afb 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -2743,7 +2743,7 @@ static void compact_nodes(void)
+  * aggressively the kernel should compact memory in the
+  * background. It takes values in the range [0, 100].
+  */
+-unsigned int __read_mostly sysctl_compaction_proactiveness = 20;
++unsigned int __read_mostly sysctl_compaction_proactiveness = 0;
+ 
+ int compaction_proactiveness_sysctl_handler(struct ctl_table *table, int write,
+ 		void *buffer, size_t *length, loff_t *ppos)
