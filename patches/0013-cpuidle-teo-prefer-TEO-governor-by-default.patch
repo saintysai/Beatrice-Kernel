@@ -1,0 +1,13 @@
+diff --git a/drivers/cpuidle/governors/teo.c b/drivers/cpuidle/governors/teo.c
+index b6f1ceae2..ad57849d5 100644
+--- a/drivers/cpuidle/governors/teo.c
++++ b/drivers/cpuidle/governors/teo.c
+@@ -647,7 +647,7 @@ static int teo_enable_device(struct cpuidle_driver *drv,
+ 
+ static struct cpuidle_governor teo_governor = {
+ 	.name =		"teo",
+-	.rating =	19,
++	.rating =	21,
+ 	.enable =	teo_enable_device,
+ 	.select =	teo_select,
+ 	.reflect =	teo_reflect,
