@@ -1,0 +1,122 @@
+diff --git a/kernel/Kbuild b/kernel/Kbuild
+index 666dcde2..bf3955f2 100644
+--- a/kernel/Kbuild
++++ b/kernel/Kbuild
+@@ -62,7 +62,7 @@ GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
+ 
+ KSU_SRC := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+ 
+-LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
++LOCAL_GIT_EXISTS := 1
+ 
+ ifeq ($(LOCAL_GIT_EXISTS),0)
+ $(info -- Can't find $(REPO_NAME) git submodule!)
+diff --git a/kernel/manager/apk_sign.c b/kernel/manager/apk_sign.c
+index eba496d5..e55270c3 100644
+--- a/kernel/manager/apk_sign.c
++++ b/kernel/manager/apk_sign.c
+@@ -36,6 +36,7 @@ static apk_sign_key_t apk_sign_keys[] = {
+ #ifdef CONFIG_KSU_MULTI_MANAGER_SUPPORT
+     { EXPECTED_SIZE_OFFICIAL, EXPECTED_HASH_OFFICIAL }, // tiann/KernelSU
+     { EXPECTED_SIZE_KOWX712, EXPECTED_HASH_KOWX712 }, // KOWX712/KernelSU
++    { EXPECTED_SIZE_KSUN, EXPECTED_HASH_KSUN }, // KernelSU-Next
+ #ifdef EXPECTED_SIZE
+     { EXPECTED_SIZE, EXPECTED_HASH }, // Custom
+ #endif
+diff --git a/kernel/manager/manager_sign.h b/kernel/manager/manager_sign.h
+index a940135d..eb2a9da4 100644
+--- a/kernel/manager/manager_sign.h
++++ b/kernel/manager/manager_sign.h
+@@ -13,6 +13,10 @@
+ #define EXPECTED_SIZE_KOWX712 0x375
+ #define EXPECTED_HASH_KOWX712 "484fcba6e6c43b1fb09700633bf2fb4758f13cb0b2f4457b80d075084b26c588"
+ 
++// KernelSU-Next (rifsxd)
++#define EXPECTED_SIZE_KSUN 0x3e6
++#define EXPECTED_HASH_KSUN "79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7"
++
+ typedef struct {
+     unsigned size;
+     const char *sha256;
+diff --git a/kernel/preinit/stub.c b/kernel/preinit/stub.c
+new file mode 100644
+index 00000000..d9bc97fb
+--- /dev/null
++++ b/kernel/preinit/stub.c
+@@ -0,0 +1,17 @@
++#include <linux/errno.h>
++#include <linux/fs.h>
++
++struct user_arg_ptr;
++
++int ksu_setup_preinit_file(struct filename **filename_ptr,
++			   struct user_arg_ptr *argv_user)
++{
++	return -EINVAL;
++}
++
++int ksu_preinit_handle_post_execveat(int *fd, struct filename **filename_ptr,
++				     void *argv_user, void *envp_user,
++				     int *flags, int *retval, int *preinit_fd)
++{
++	return 0;
++}
+diff --git a/kernel/tools/code_generation/preinit_runner/preinit_runner.mk b/kernel/tools/code_generation/preinit_runner/preinit_runner.mk
+index 994a2a3c..fb3ebe22 100644
+--- a/kernel/tools/code_generation/preinit_runner/preinit_runner.mk
++++ b/kernel/tools/code_generation/preinit_runner/preinit_runner.mk
+@@ -1,53 +1,2 @@
+-# preinit runner: a static nolibc binary embedded into kernelsu, see preinit/.
+-# It is built against the installed UAPI headers of the target kernel
+-# (CONFIG_HEADERS_INSTALL, enabled by gki_defconfig).
+-KSU_UAPI_INC := $(objtree)/usr/include
+-
+-ifeq ($(wildcard $(KSU_UAPI_INC)/linux/unistd.h),)
+-KSU_HEADERS_INSTALL_OUTPUT := $(shell $(MAKE) -s -f $(srctree)/Makefile \
+-	ARCH="$(ARCH)" headers_install \
+-	INSTALL_HDR_PATH="$(abspath $(objtree))/usr")
+-endif
+-
+-ifneq ($(wildcard $(KSU_UAPI_INC)/linux/unistd.h),)
+-kernelsu-objs += preinit/preinit.o
+-kernelsu-objs += preinit/blob.o
+-
+-KSU_RUNNER_OBJ := $(abspath $(obj))
+-KSU_RUNNER_BIN := $(KSU_RUNNER_OBJ)/preinit/runner.elf
+-KSU_RUNNER_TARGET := $(obj)/preinit/runner.elf
+-KSU_RUNNER_SRC := $(KSU_SRC)/preinit/runner
+-
+-KSU_RUNNER_CFLAGS := $(CLANG_FLAGS) -std=gnu11 -Os -Wall \
+-	-nostdinc -isystem $(shell $(CC) -print-file-name=include) \
+-	-I$(KSU_RUNNER_SRC)/nolibc -I$(KSU_UAPI_INC) \
+-	-I$(KSU_SRC)/include \
+-	-ffreestanding -fno-stack-protector -fno-pic -fno-pie \
+-	-fno-asynchronous-unwind-tables -fno-unwind-tables \
+-	-ffunction-sections -fdata-sections
+-
+-KSU_RUNNER_LIBS :=
+-ifeq ($(ARCH),arm)
+-KSU_RUNNER_LIBS := $(shell $(CC) $(CLANG_FLAGS) -print-libgcc-file-name)
+-endif
+-
+-quiet_cmd_ksu_runner = CC      $@
+-      cmd_ksu_runner = mkdir -p $(dir $@) && \
+-		$(CC) $(KSU_RUNNER_CFLAGS) -c -o $@.o $< && \
+-		$(LD) -static -nostdlib -e _start --gc-sections -s -o $@ $@.o $(KSU_RUNNER_LIBS) && \
+-		rm -f $@.o
+-
+-$(KSU_RUNNER_TARGET): $(KSU_RUNNER_SRC)/runner.c \
+-		$(wildcard $(KSU_RUNNER_SRC)/nolibc/*.h \
+-			   $(KSU_RUNNER_SRC)/nolibc/sys/*.h \
+-			   $(KSU_SRC)/include/uapi/*.h) FORCE
+-	$(call if_changed,ksu_runner)
+-
+-targets += preinit/runner.elf
+-$(obj)/preinit/blob.o: $(KSU_RUNNER_TARGET)
+-asflags-y += -DKSU_PREINIT_RUNNER_BIN=\"$(KSU_RUNNER_BIN)\"
+-else
+-$(warning -- $(REPO_NAME): $(KSU_UAPI_INC) not found, preinit disabled)
+ ccflags-y += -DKSU_NO_PREINIT
+-endif
+-
++kernelsu-objs += preinit/stub.o
